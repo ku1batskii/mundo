@@ -5,61 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg: #000; --accent: #007aff; }
-        body { background: var(--bg); color: white; margin: 0; font-family: -apple-system, sans-serif; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
-        
-        /* Динамический Остров */
+        :root { --iron-blue: #00d2ff; --iron-gold: #ffcf00; --bg: #000; }
+        body { background: var(--bg); color: white; margin: 0; font-family: "Courier New", monospace; overflow: hidden; height: 100vh; }
+
+        /* Остров Старка */
         .island {
-            position: fixed; top: 11px; width: 126px; height: 37px; background: #000;
-            border-radius: 22px; transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; align-items: center; justify-content: center; z-index: 100;
-            border: 0.5px solid #333; overflow: hidden;
+            position: fixed; top: 11px; left: 50%; transform: translateX(-50%);
+            width: 126px; height: 37px; background: #000; border-radius: 20px;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000; border: 1px solid rgba(0, 210, 255, 0.3); overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
         }
 
-        .island.expanded {
-            width: 92vw; height: 80vh; border-radius: 40px; top: 20px;
-            flex-direction: column; padding: 25px; background: #0a0a0a;
+        .island.expanded { width: 95vw; height: 85vh; border-radius: 30px; top: 20px; flex-direction: column; padding: 20px; box-sizing: border-box; }
+
+        /* 3D Голограмма Джарвиса */
+        .jarvis-core {
+            width: 60px; height: 60px; position: relative; display: none;
+            perspective: 1000px; margin-bottom: 20px;
+        }
+        .expanded .jarvis-core { display: block; width: 150px; height: 150px; }
+
+        .ring {
+            position: absolute; border: 2px solid var(--iron-blue); border-radius: 50%;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            animation: rotate 3s linear infinite; opacity: 0.6;
+        }
+        .ring-1 { width: 100%; height: 100%; border-style: dashed; }
+        .ring-2 { width: 70%; height: 70%; border-color: var(--iron-gold); animation-direction: reverse; }
+        
+        @keyframes rotate { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        .content { opacity: 0; display: none; width: 100%; }
+        .expanded .content { opacity: 1; display: block; text-align: center; }
+
+        .terminal {
+            background: rgba(0, 40, 60, 0.3); border: 1px solid var(--iron-blue);
+            padding: 15px; height: 200px; overflow-y: auto; text-align: left;
+            font-size: 12px; color: var(--iron-blue); margin: 15px 0; text-transform: uppercase;
         }
 
-        /* Персонаж (Глаз ИИ) */
-        .ai-eye {
-            width: 20px; height: 20px; background: var(--accent);
-            border-radius: 50%; transition: 0.5s; position: relative;
-            box-shadow: 0 0 15px var(--accent);
+        .btn-action {
+            background: transparent; border: 1px solid var(--iron-blue); color: var(--iron-blue);
+            padding: 15px; border-radius: 10px; width: 100%; font-weight: bold;
+            box-shadow: 0 0 10px var(--iron-blue); text-transform: uppercase;
         }
-
-        .expanded .ai-eye { width: 60px; height: 60px; margin-bottom: 20px; }
-
-        .content { opacity: 0; display: none; width: 100%; text-align: center; }
-        .expanded .content { opacity: 1; display: block; }
-
-        .chat-area {
-            background: #1c1c1e; border-radius: 20px; padding: 15px;
-            height: 250px; overflow-y: auto; text-align: left; margin: 20px 0;
-            font-size: 15px; line-height: 1.5; border: 1px solid #333;
-        }
-
-        .btn {
-            background: white; color: black; border: none; padding: 18px;
-            border-radius: 20px; width: 100%; font-size: 17px; font-weight: 700;
-            transition: 0.3s;
-        }
-
-        .checkpoint { color: #32d74b; font-size: 12px; margin-top: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="island" id="island" onclick="expandIsland()">
-    <div class="ai-eye" id="eye"></div>
+<div class="island" id="island" onclick="expand()">
+    <div id="mini-core" style="width: 10px; height: 10px; background: var(--iron-blue); border-radius: 50%; box-shadow: 0 0 10px var(--iron-blue);"></div>
     
+    <div class="jarvis-core">
+        <div class="ring ring-1"></div>
+        <div class="ring ring-2"></div>
+    </div>
+
     <div class="content">
-        <h2 id="ai-name">Mundo AI</h2>
-        <div class="chat-area" id="chat">
-            <p style="color: #888;">Слушаю тебя... Давай создадим что-то великое.</p>
-        </div>
-        <button class="btn" onclick="startTalking(event)">Начать диалог</button>
-        <div id="checkpoint-status" class="checkpoint"></div>
+        <h3 style="color: var(--iron-blue);">SYSTEM: JARVIS ONLINE</h3>
+        <div class="terminal" id="console">Initializing neural link... Waiting for input.</div>
+        <button class="btn-action" onclick="talk(event)">🎤 Activate Neural Link</button>
     </div>
 </div>
 
@@ -67,39 +73,34 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    function expandIsland() {
-        document.getElementById('island').classList.add('expanded');
-    }
+    function expand() { document.getElementById('island').classList.add('expanded'); }
 
-    function startTalking(e) {
+    function talk(e) {
         e.stopPropagation();
-        tg.HapticFeedback.impactOccurred('heavy');
+        tg.HapticFeedback.impactOccurred('medium');
+        const console = document.getElementById('console');
+        console.innerHTML += "<br>> ANALYZING VOICE PATTERN...";
         
-        const chat = document.getElementById('chat');
-        const eye = document.getElementById('eye');
-        
-        // Имитация диалога
-        eye.style.background = '#32d74b';
-        chat.innerHTML += "<p><b>Ты:</b> Рассказываю идею нового приложения...</p>";
-        
+        // Голос Джарвиса
+        const msg = new SpeechSynthesisUtterance("Welcome back, Sir. Data analysis is in progress.");
+        msg.lang = 'en-US'; msg.pitch = 0.8; msg.rate = 1.1;
+        window.speechSynthesis.speak(msg);
+
         setTimeout(() => {
-            chat.innerHTML += "<p><b>Mundo:</b> Это звучит мощно. Если мы используем блокчейн для этого, оценка вырастет на 40%.</p>";
-            eye.style.background = var_accent;
-            checkCheckpoint();
+            console.innerHTML += "<br>> CHECKPOINT REACHED. SENDING TO CLOUD...";
+            sendReport();
         }, 2000);
     }
 
-    function checkCheckpoint() {
-        const status = document.getElementById('checkpoint-status');
-        status.innerText = "ЧЕКПОИНТ ДОСТИГНУТ: ОТЧЕТ ГЕНЕРИРУЕТСЯ...";
-        tg.HapticFeedback.notificationOccurred('success');
-        
-        // Здесь мы бы отправили данные на сервер
-        setTimeout(() => {
-            tg.close(); // Закрываем после отправки отчета
-        }, 3000);
+    async function sendReport() {
+        const userId = tg.initDataUnsafe?.user?.id;
+        await fetch('/api/report', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ message: "Idea Analyzed: Neural App Concept", chatId: userId })
+        });
+        document.getElementById('console').innerHTML += "<br>> REPORT TRANSMITTED TO TELEGRAM.";
     }
 </script>
-
 </body>
 </html>
