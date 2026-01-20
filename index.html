@@ -5,102 +5,148 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --iron-blue: #00d2ff; --iron-gold: #ffcf00; --bg: #000; }
-        body { background: var(--bg); color: white; margin: 0; font-family: "Courier New", monospace; overflow: hidden; height: 100vh; }
+        :root { 
+            --stark-blue: #00e5ff; 
+            --stark-dark: #001a23;
+            --iron-red: #ff003c;
+        }
+        
+        body { 
+            background: #000; 
+            color: var(--stark-blue); 
+            margin: 0; 
+            font-family: 'Orbitron', 'Courier New', monospace; 
+            overflow: hidden; 
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
 
-        /* Остров Старка */
-        .island {
-            position: fixed; top: 11px; left: 50%; transform: translateX(-50%);
-            width: 126px; height: 37px; background: #000; border-radius: 20px;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 1000; border: 1px solid rgba(0, 210, 255, 0.3); overflow: hidden;
+        /* Фоновая сетка как у Джарвиса */
+        .grid-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px; pointer-events: none; z-index: -1;
+        }
+
+        /* Дуговой реактор MundoChat */
+        .arc-reactor {
+            width: 200px; height: 200px;
+            position: relative;
             display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: transform 0.3s ease;
         }
+        
+        .arc-reactor:active { transform: scale(0.95); }
 
-        .island.expanded { width: 95vw; height: 85vh; border-radius: 30px; top: 20px; flex-direction: column; padding: 20px; box-sizing: border-box; }
-
-        /* 3D Голограмма Джарвиса */
-        .jarvis-core {
-            width: 60px; height: 60px; position: relative; display: none;
-            perspective: 1000px; margin-bottom: 20px;
+        .core {
+            position: absolute; width: 60px; height: 60px;
+            background: #fff; border-radius: 50%;
+            box-shadow: 0 0 50px var(--stark-blue), 0 0 20px #fff;
+            z-index: 10;
         }
-        .expanded .jarvis-core { display: block; width: 150px; height: 150px; }
 
         .ring {
-            position: absolute; border: 2px solid var(--iron-blue); border-radius: 50%;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
-            animation: rotate 3s linear infinite; opacity: 0.6;
+            position: absolute; border: 4px solid var(--stark-blue);
+            border-radius: 50%; animation: rotate 4s linear infinite;
+            opacity: 0.7;
         }
-        .ring-1 { width: 100%; height: 100%; border-style: dashed; }
-        .ring-2 { width: 70%; height: 70%; border-color: var(--iron-gold); animation-direction: reverse; }
-        
-        @keyframes rotate { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        .ring-outer { width: 180px; height: 180px; border-style: double; border-width: 8px; }
+        .ring-inner { width: 120px; height: 120px; border-style: dashed; animation-direction: reverse; }
 
-        .content { opacity: 0; display: none; width: 100%; }
-        .expanded .content { opacity: 1; display: block; text-align: center; }
-
-        .terminal {
-            background: rgba(0, 40, 60, 0.3); border: 1px solid var(--iron-blue);
-            padding: 15px; height: 200px; overflow-y: auto; text-align: left;
-            font-size: 12px; color: var(--iron-blue); margin: 15px 0; text-transform: uppercase;
+        @keyframes rotate { 
+            from { transform: rotate(0deg); } 
+            to { transform: rotate(360deg); } 
         }
 
-        .btn-action {
-            background: transparent; border: 1px solid var(--iron-blue); color: var(--iron-blue);
-            padding: 15px; border-radius: 10px; width: 100%; font-weight: bold;
-            box-shadow: 0 0 10px var(--iron-blue); text-transform: uppercase;
+        /* Панель данных */
+        .hud-panel {
+            width: 90%; max-width: 400px;
+            background: rgba(0, 26, 35, 0.8);
+            border: 1px solid var(--stark-blue);
+            border-radius: 15px; padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+            margin-top: 40px; text-align: center;
+        }
+
+        .status-text { font-size: 10px; letter-spacing: 2px; margin-bottom: 10px; color: var(--stark-blue); }
+        .console-output { height: 100px; overflow-y: auto; font-size: 13px; text-align: left; border-top: 1px solid rgba(0,229,255,0.3); padding-top: 10px; color: #fff; }
+
+        .btn-stark {
+            background: transparent; border: 1px solid var(--stark-blue);
+            color: var(--stark-blue); padding: 12px 25px; margin-top: 20px;
+            font-weight: bold; border-radius: 5px; width: 100%;
+            text-transform: uppercase; cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-<div class="island" id="island" onclick="expand()">
-    <div id="mini-core" style="width: 10px; height: 10px; background: var(--iron-blue); border-radius: 50%; box-shadow: 0 0 10px var(--iron-blue);"></div>
-    
-    <div class="jarvis-core">
-        <div class="ring ring-1"></div>
-        <div class="ring ring-2"></div>
+    <div class="grid-overlay"></div>
+
+    <h1 style="font-size: 18px; margin-bottom: 30px; letter-spacing: 5px;">MUNDOCHAT OS</h1>
+
+    <div class="arc-reactor" onclick="triggerScan()">
+        <div class="core"></div>
+        <div class="ring ring-outer"></div>
+        <div class="ring ring-inner"></div>
     </div>
 
-    <div class="content">
-        <h3 style="color: var(--iron-blue);">SYSTEM: JARVIS ONLINE</h3>
-        <div class="terminal" id="console">Initializing neural link... Waiting for input.</div>
-        <button class="btn-action" onclick="talk(event)">🎤 Activate Neural Link</button>
+    <div class="hud-panel">
+        <div class="status-text">NEURAL LINK: STANDBY</div>
+        <div class="console-output" id="console">> Инициализация MundoChat...<br>> Ожидание голосовой команды...</div>
+        <button class="btn-stark" onclick="activateAI(event)">Активировать протокол</button>
     </div>
-</div>
 
-<script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
 
-    function expand() { document.getElementById('island').classList.add('expanded'); }
+        function triggerScan() {
+            tg.HapticFeedback.impactOccurred('medium');
+            logConsole("Сканирование биометрических данных...");
+        }
 
-    function talk(e) {
-        e.stopPropagation();
-        tg.HapticFeedback.impactOccurred('medium');
-        const console = document.getElementById('console');
-        console.innerHTML += "<br>> ANALYZING VOICE PATTERN...";
-        
-        // Голос Джарвиса
-        const msg = new SpeechSynthesisUtterance("Welcome back, Sir. Data analysis is in progress.");
-        msg.lang = 'en-US'; msg.pitch = 0.8; msg.rate = 1.1;
-        window.speechSynthesis.speak(msg);
+        function logConsole(msg) {
+            const console = document.getElementById('console');
+            console.innerHTML += `<br>> ${msg}`;
+            console.scrollTop = console.scrollHeight;
+        }
 
-        setTimeout(() => {
-            console.innerHTML += "<br>> CHECKPOINT REACHED. SENDING TO CLOUD...";
-            sendReport();
-        }, 2000);
-    }
+        function activateAI(e) {
+            e.stopPropagation();
+            tg.HapticFeedback.notificationOccurred('success');
+            
+            document.querySelector('.core').style.background = '#00e5ff';
+            logConsole("ПРОТОКОЛ 'MUNDO' АКТИВИРОВАН");
+            
+            const speech = new SpeechSynthesisUtterance("Mundo Chat active. I am ready to analyze your thoughts, Sir.");
+            speech.lang = 'en-US';
+            speech.rate = 1.0;
+            window.speechSynthesis.speak(speech);
 
-    async function sendReport() {
-        const userId = tg.initDataUnsafe?.user?.id;
-        await fetch('/api/report', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ message: "Idea Analyzed: Neural App Concept", chatId: userId })
-        });
-        document.getElementById('console').innerHTML += "<br>> REPORT TRANSMITTED TO TELEGRAM.";
-    }
-</script>
+            setTimeout(() => {
+                logConsole("Анализ вселенной завершен. Отчет сформирован.");
+                sendToTelegram();
+            }, 3000);
+        }
+
+        async function sendToTelegram() {
+            const userId = tg.initDataUnsafe?.user?.id;
+            try {
+                await fetch('/api/report', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message: "Анализ идеи в MundoChat завершен. Все системы в норме.", chatId: userId })
+                });
+                logConsole("ДАННЫЕ ПЕРЕДАНЫ В ВАШ ТЕРМИНАЛ.");
+            } catch (err) {
+                logConsole("ОШИБКА СВЯЗИ С БАЗОЙ.");
+            }
+        }
+    </script>
 </body>
 </html>
