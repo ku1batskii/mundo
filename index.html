@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --bg: #000; --accent: #007aff; }
+        body { background: var(--bg); color: white; margin: 0; font-family: -apple-system, sans-serif; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
+        
+        /* Динамический Остров */
+        .island {
+            position: fixed; top: 11px; width: 126px; height: 37px; background: #000;
+            border-radius: 22px; transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; justify-content: center; z-index: 100;
+            border: 0.5px solid #333; overflow: hidden;
+        }
+
+        .island.expanded {
+            width: 92vw; height: 80vh; border-radius: 40px; top: 20px;
+            flex-direction: column; padding: 25px; background: #0a0a0a;
+        }
+
+        /* Персонаж (Глаз ИИ) */
+        .ai-eye {
+            width: 20px; height: 20px; background: var(--accent);
+            border-radius: 50%; transition: 0.5s; position: relative;
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        .expanded .ai-eye { width: 60px; height: 60px; margin-bottom: 20px; }
+
+        .content { opacity: 0; display: none; width: 100%; text-align: center; }
+        .expanded .content { opacity: 1; display: block; }
+
+        .chat-area {
+            background: #1c1c1e; border-radius: 20px; padding: 15px;
+            height: 250px; overflow-y: auto; text-align: left; margin: 20px 0;
+            font-size: 15px; line-height: 1.5; border: 1px solid #333;
+        }
+
+        .btn {
+            background: white; color: black; border: none; padding: 18px;
+            border-radius: 20px; width: 100%; font-size: 17px; font-weight: 700;
+            transition: 0.3s;
+        }
+
+        .checkpoint { color: #32d74b; font-size: 12px; margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="island" id="island" onclick="expandIsland()">
+    <div class="ai-eye" id="eye"></div>
+    
+    <div class="content">
+        <h2 id="ai-name">Mundo AI</h2>
+        <div class="chat-area" id="chat">
+            <p style="color: #888;">Слушаю тебя... Давай создадим что-то великое.</p>
+        </div>
+        <button class="btn" onclick="startTalking(event)">Начать диалог</button>
+        <div id="checkpoint-status" class="checkpoint"></div>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    function expandIsland() {
+        document.getElementById('island').classList.add('expanded');
+    }
+
+    function startTalking(e) {
+        e.stopPropagation();
+        tg.HapticFeedback.impactOccurred('heavy');
+        
+        const chat = document.getElementById('chat');
+        const eye = document.getElementById('eye');
+        
+        // Имитация диалога
+        eye.style.background = '#32d74b';
+        chat.innerHTML += "<p><b>Ты:</b> Рассказываю идею нового приложения...</p>";
+        
+        setTimeout(() => {
+            chat.innerHTML += "<p><b>Mundo:</b> Это звучит мощно. Если мы используем блокчейн для этого, оценка вырастет на 40%.</p>";
+            eye.style.background = var_accent;
+            checkCheckpoint();
+        }, 2000);
+    }
+
+    function checkCheckpoint() {
+        const status = document.getElementById('checkpoint-status');
+        status.innerText = "ЧЕКПОИНТ ДОСТИГНУТ: ОТЧЕТ ГЕНЕРИРУЕТСЯ...";
+        tg.HapticFeedback.notificationOccurred('success');
+        
+        // Здесь мы бы отправили данные на сервер
+        setTimeout(() => {
+            tg.close(); // Закрываем после отправки отчета
+        }, 3000);
+    }
+</script>
+
+</body>
+</html>
